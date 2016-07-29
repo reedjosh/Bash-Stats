@@ -1,0 +1,101 @@
+#!/bin/bash
+##################################################
+# This is my script! (stats)
+# Joshua Reed
+# Winter 2015
+# Oregonstate EECS
+# CS 344 (Operating Systems)
+# The user provides a file to run stats on
+# stats returns with the average, total, and
+# median of each row or column
+##################################################
+
+((hay=1)) # will set to zero if bad input thus triggering usage message
+file="$2"
+for i in "$@"; do
+	if [[ $i == -r* ]];	then
+		##################################################
+		# Print average, median, and total of each row 
+		# 
+		##################################################
+		if [ ! -f $file ]; then # check for file
+    		echo "File not found!"
+			exit 1
+		fi
+		echo "Avg.   Total   Median"
+		# read line by line until eof
+		while read line; do
+			med="0"
+			total="0"
+			count="0"
+			# iterate word by word until eol
+			for word in $line; do
+				((count=count + 1)) # count 
+				((total=total + word)) # do maths
+				(( avg =  total / count ))
+				if [ $(( total * 10 / count % 10 )) -ge 5 ]; then 
+					(( avg = avg + 1 ))
+				fi
+			done
+		
+			# Calulates the median by sort -ning, then cutting the first half out and taking the last number
+			med=$(printf '%s\n' $line | sort -n | head -$(( $count / 2 + 1)) | tail -1) 
+	
+			# Nicely print the numbers with appropriate tab spacing	
+			echo $avg $'\t' $total $'\t' $med | column -st 
+		done < $file # end of looop and feed test_file to read
+		((hay=0)) # Prevent usage message
+	elif [[ $i == -c* ]]; then
+		##################################################
+		# Print average, median, and total of each column
+		# 
+		##################################################
+		colCount="0"
+		if [ ! -f $file ]; then # check for file
+    		echo "File not found!"
+			exit 1
+		fi
+		line=$(head -n 1 $file)
+		for word in $line
+		do
+			((colCount=colCount+1))
+		done
+		((cols=colCount))
+		echo -e "Avg.   Total   Median"
+		while [ $colCount -gt 0 ] # iterate through the columns
+		do
+			# this cuts out a column and turns it into a line
+			line=$(cut -c$((cols*2-colCount*2+1)) $file | tr '\n' ' ') 
+			
+			wordCount="0"
+			med="0"
+			total="0"
+			# iterate word by word until eol
+			for word in $line; do
+				((wordCount=wordCount + 1)) # count 
+				((total=total + word)) # do maths
+				(( avg =  total / wordCount ))
+				
+				# Because by default the remainder is removed, 
+				# this adds one if the remainder was 0.5 or greater 
+				if [ $(( total * 10 / wordCount % 10 )) -ge 5 ]; then 
+					(( avg = avg + 1 ))
+				fi
+			done
+		
+			# Calulates the median by sort -ning, then cutting the first half out and taking the last number
+			med=$(printf '%s\n' $line | sort -n | head -$(( $wordCount / 2 + 1)) | tail -1) 
+			
+			# Nicely print the numbers with appropriate tab spacing	
+			echo $avg $'\t' $total $'\t' $med | column -st 
+			((colCount=colCount-1)) # decrement counter
+		done
+		((hay=0)) # Prevent usage message
+	fi
+done
+		if [[ $hay = 1 ]]; then 
+			echo "Usage: stats {-rows|-cols} [file]"
+			exit 1
+		fi
+exit 0
+
